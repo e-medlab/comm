@@ -158,8 +158,101 @@ class TcpIpDriver implements IDriver
     }
     return messageReceived;
   }
-  
-  public 
+
+  public void waitForHostMessagesContinuous(TcpIpMessageListener listener)
+          throws Exception
+  {
+      psLog.println("[TcpIpDriver] waitForHostMessagesContinuous");
+      psLog.println("[TcpIpDriver] listen on " + iPort + "...");
+
+      if (listener == null) {
+          throw new IllegalArgumentException("listener must not be null");
+      }
+
+      ServerSocket serverSocket = null;
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+      try {
+          serverSocket = new ServerSocket(iPort);
+          socket = serverSocket.accept();
+          psLog.println("[TcpIpDriver] begin session");
+
+          inputStream  = socket.getInputStream();
+          outputStream = socket.getOutputStream();
+
+          while (true) {
+              byte[] buffer = new byte[255];
+              int read = inputStream.read(buffer);
+              if (read == -1) {
+                  psLog.println("[TcpIpDriver] peer closed connection");
+                  break;
+              }
+              CommUtils.append(baos, buffer);
+
+              psLog.println("[TcpIpDriver] " + CommUtils.getString(buffer));
+              byte byte0 = buffer[0];
+
+                if (byte0 != 4) { // not EOT
+                    outputStream.write((byte) 6); // <ACK>
+                    psLog.println("[TcpIpDriver] -> <ACK>");
+                } else { // EOT
+                    psLog.println("[TcpIpDriver] EOT received");
+                    boolean boSendQueryResult = false;
+                    byte[] abMessageReceived = baos.toByteArray();
+                    IMessage messageReceived = MessageFactory.parse(abMessageReceived);
+
+                    if (messageReceived != null) {
+                        int iRecordsCount = messageReceived.getRecordsCount();
+                        for (int i = 0; i < iRecordsCount; i++) {
+                            IRecord record = messageReceived.getRecord(i);
+                            if (record.getType() == IRecord.Type.QUERY) {
+                                boSendQueryResult = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    baos = new ByteArrayOutputStream();
+
+                    IMessage response = null;
+                    if (messageReceived != null) {
+                        try {
+                            response = listener.onMessage(messageReceived);
+                        } catch (Exception handlerEx) {
+                            psLog.println("[TcpIpDriver] listener threw exception trying to handle a response to a query");
+                            handlerEx.printStackTrace(psLog);
+                        }
+                    }
+
+                    if (boSendQueryResult) {
+                        if (response != null) {
+                            // Send response to QUERY on same socket.
+                            // Note: boSendEnquiry = false, boSendEndOfTransmission = true
+                            sendMessage(response, false, true);
+                        } else {
+                            psLog.println("[TcpIpDriver] -> <NAK> (no response for QUERY)");
+                            outputStream.write((byte) 21); // <NAK>
+                        }
+                    } else {
+                        // Non-QUERY message: we already ACKed each frame; just send final ACK as before.
+                        psLog.println("[TcpIpDriver] -> <ACK>");
+                        outputStream.write((byte) 6); // <ACK>
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace(psLog);
+        } finally {
+            psLog.println("[TcpIpDriver] end session");
+            if (outputStream != null) try { outputStream.close(); } catch (Exception ex) {}
+            if (inputStream  != null) try { inputStream.close();  } catch (Exception ex) {}
+            try { if (socket != null) socket.close(); } catch (Exception ex) {}
+            try { if (serverSocket != null) serverSocket.close(); } catch (Exception ex) {}
+        }
+    }
+
+
+    public
   void destroy() 
   {
     psLog.println("[TcpIpDriver] destroy");
