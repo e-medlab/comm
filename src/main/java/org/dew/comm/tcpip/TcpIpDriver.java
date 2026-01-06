@@ -11,8 +11,10 @@ import java.util.Properties;
 import org.dew.comm.*;
 import org.dew.comm.astm.ASTMMessage;
 
-public 
-class TcpIpDriver implements IDriver
+/**
+ * This file has been modified from the original version found in the repository this one is forked from (check README.md).
+ */
+public class TcpIpDriver implements IDriver
 {
   protected Socket socket;
   protected InputStream inputStream;

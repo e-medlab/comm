@@ -2,13 +2,13 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.dew</groupId>
+  <groupId>org.taltech.emedlab</groupId>
   <artifactId>comm</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
 
   <name>comm</name>
-  <url>https://github.com/giosil/comm</url>
+  <url>https://github.com/e-medlab/comm</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

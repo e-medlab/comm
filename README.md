@@ -1,5 +1,8 @@
 # Comm
 
+This repository is a fork from it's original location at https://github.com/giosil/comm.
+Any modified or added source files are marked with a comment header.
+
 Library to exchange (RS232, TCP, HTTP, ...) LIS data (ASTM, XML, CVS, ...).
 
 ## Example
